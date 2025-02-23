@@ -19,5 +19,10 @@ public class Functional2 {
                 .filter(integer -> integer < 13 || integer > 19)
                 .collect(Collectors.toList());
     }
+    public List<String> noZ(List<String> strings) {
+        return strings.stream()
+                .filter(s -> !s.contains("z"))
+                .collect(Collectors.toList());
+    }
 
 }
