@@ -44,8 +44,24 @@ public class Functional2 {
         List<String> newStrings = strings.stream()
                 .filter(s -> !s.endsWith("y") && !s.contains("yy"))
                 .collect(Collectors.toList());
-        newStrings.replaceAll(s-> s+"y");
+        newStrings.replaceAll(s -> s + "y");
         return newStrings;
+    }
+
+    public List<Integer> two2(List<Integer> nums) {
+        nums.replaceAll(integer -> integer * 2);
+        return nums.stream()
+                .filter(integer -> integer % 10 != 2)
+                .collect(Collectors.toList());
+    }
+
+    public List<Integer> square56(List<Integer> nums) {
+        nums.replaceAll(integer -> integer * integer);
+        List<Integer> newnums = nums.stream()
+                .filter(integer -> integer % 10 != 5 && integer % 10 != 6)
+                .collect(Collectors.toList());
+        newnums.replaceAll(integer -> integer+10);
+        return newnums;
     }
 
 }
