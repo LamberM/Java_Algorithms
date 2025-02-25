@@ -33,10 +33,14 @@ public class Logic1 {
     }
 
     public String alarmClock(int day, boolean vacation) {
-        if (day > 0 && day <= 5 && !vacation) return "7:00";
-        if (day > 0 && day <= 5) return "10:00";
-        if ((day == 0 || day == 6) && !vacation) return "10:00";
-        else return "off";
+        if (vacation){
+            if (day > 0 && day <= 5) return "10:00";
+            else return "off";
+        }
+        else {
+            if (day > 0 && day <= 5) return "7:00";
+            else return "10:00";
+        }
     }
 
     public boolean love6(int a, int b) {
@@ -45,4 +49,21 @@ public class Logic1 {
         return a == 6 || b == 6 || sum == 6 || diff == 6;
     }
 
+    public boolean in1To10(int n, boolean outsideMode) {
+        if(outsideMode){
+            return n <= 1 || n >= 10;
+        }else {
+            return n > 0 && n <= 10;
+        }
+    }
+    public boolean specialEleven(int n) {
+        return n%11==0 || n%11==1;
+    }
+    public boolean more20(int n) {
+        return n%20==1 || n%20==2;
+    }
+    public boolean old35(int n) {
+        if (n%3==0&&n%5==0)return false;
+        return n%3==0||n%5==0;
+    }
 }
