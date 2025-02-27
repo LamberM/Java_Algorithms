@@ -33,11 +33,10 @@ public class Logic1 {
     }
 
     public String alarmClock(int day, boolean vacation) {
-        if (vacation){
+        if (vacation) {
             if (day > 0 && day <= 5) return "10:00";
             else return "off";
-        }
-        else {
+        } else {
             if (day > 0 && day <= 5) return "7:00";
             else return "10:00";
         }
@@ -50,20 +49,40 @@ public class Logic1 {
     }
 
     public boolean in1To10(int n, boolean outsideMode) {
-        if(outsideMode){
+        if (outsideMode) {
             return n <= 1 || n >= 10;
-        }else {
+        } else {
             return n > 0 && n <= 10;
         }
     }
+
     public boolean specialEleven(int n) {
-        return n%11==0 || n%11==1;
+        return n % 11 == 0 || n % 11 == 1;
     }
+
     public boolean more20(int n) {
-        return n%20==1 || n%20==2;
+        return n % 20 == 1 || n % 20 == 2;
     }
+
     public boolean old35(int n) {
-        if (n%3==0&&n%5==0)return false;
-        return n%3==0||n%5==0;
+        if (n % 3 == 0 && n % 5 == 0) return false;
+        return n % 3 == 0 || n % 5 == 0;
     }
+
+    public boolean less20(int n) {
+        return n % 20 == 18 || n % 20 == 19;
+    }
+
+    public boolean nearTen(int num) {
+        return num % 10 == 8 || num % 10 == 9 || num % 10 == 0 || num % 10 == 1 || num % 10 == 2;
+    }
+
+    public int teenSum(int a, int b) {
+        int sum = a + b;
+        if ((a >= 13 && a <= 19)||(b >= 13 && b <= 19)) {
+            return 19;
+        }
+        return sum;
+    }
+
 }
