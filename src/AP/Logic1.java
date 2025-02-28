@@ -79,10 +79,42 @@ public class Logic1 {
 
     public int teenSum(int a, int b) {
         int sum = a + b;
-        if ((a >= 13 && a <= 19)||(b >= 13 && b <= 19)) {
+        if ((a >= 13 && a <= 19) || (b >= 13 && b <= 19)) {
             return 19;
         }
         return sum;
     }
 
+    public boolean answerCell(boolean isMorning, boolean isMom, boolean isAsleep) {
+        if (isMom && !isAsleep) {
+            return true;
+        }
+        return !isMorning && !isAsleep;
+    }
+
+    public int teaParty(int tea, int candy) {
+        if (tea < 5 || candy < 5) {
+            return 0;
+        }
+        if (tea > 5 || candy > 5) {
+            if (tea / candy >= 2 || candy / tea >= 2) {
+                return 2;
+            }
+            return 1;
+        }
+        return 1;
+    }
+
+    public String fizzString(String str) {
+        if (str.startsWith("f") && str.endsWith("b")) {
+            return "FizzBuzz";
+        }
+        if (str.startsWith("f")) {
+            return "Fizz";
+        }
+        if (str.endsWith("b")) {
+            return "Buzz";
+        }
+        return str;
+    }
 }
