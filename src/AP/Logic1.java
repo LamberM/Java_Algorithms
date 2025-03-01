@@ -117,4 +117,33 @@ public class Logic1 {
         }
         return str;
     }
+
+    public String fizzString2(int n) {
+        if (n % 3 == 0 && n % 5 == 0) {
+            return "FizzBuzz!";
+        }
+        if (n % 3 == 0) {
+            return "Fizz!";
+        }
+        if (n % 5 == 0) {
+            return "Buzz!";
+        }
+        return n + "!";
+    }
+
+    public boolean twoAsOne(int a, int b, int c) {
+        return a + b == c || a + c == b || c + b == a;
+    }
+
+    public boolean inOrder(int a, int b, int c, boolean bOk) {
+        return (b > a || bOk) && c > b;
+    }
+
+    public boolean inOrderEqual(int a, int b, int c, boolean equalOk) {
+        if (equalOk) {
+            return (a == b || b > a) && (c > b || b == c);
+        } else {
+            return b > a && c > b;
+        }
+    }
 }
