@@ -146,4 +146,24 @@ public class Logic1 {
             return b > a && c > b;
         }
     }
+
+    public boolean lastDigit(int a, int b, int c) {
+        return a % 10 == b % 10 || a % 10 == c % 10 || b % 10 == c % 10;
+    }
+
+    public boolean lessBy10(int a, int b, int c) {
+        return a - b >= 10 || a - c >= 10 || b - a >= 10 || b - c >= 10 || c - a >= 10 || c - b >= 10;
+    }
+
+    public int withoutDoubles(int die1, int die2, boolean noDoubles) {
+        if (noDoubles) {
+            if (die1 == die2) {
+                return die1 + die2 + 1;
+            } else {
+                return die1 + die2;
+            }
+        } else {
+            return die1 + die2;
+        }
+    }
 }
