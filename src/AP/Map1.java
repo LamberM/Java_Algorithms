@@ -71,4 +71,37 @@ public class Map1 {
         }
         return map;
     }
+
+    public Map<String, String> mapAB4(Map<String, String> map) {
+        if (map.containsKey("c")) {
+            if (map.containsKey("a") && map.containsKey("b")) {
+                if (map.get("a").length()==map.get("b").length()){
+                    map.replace("a","");
+                    map.replace("b","");
+                }
+                if (map.get("a").length()>map.get("b").length()){
+                    map.replace("c",map.get("a"));
+                }
+                if (map.get("a").length()<map.get("b").length()){
+                    map.replace("c",map.get("b"));
+                }
+            }
+        }
+        else {
+            if (map.containsKey("a") && map.containsKey("b")) {
+                if (map.get("a").length()==map.get("b").length()){
+                    map.replace("a","");
+                    map.replace("b","");
+                }
+                if (map.get("a").length()>map.get("b").length()){
+                    map.put("c",map.get("a"));
+                }
+                if (map.get("a").length()<map.get("b").length()){
+                    map.put("c",map.get("b"));
+                }
+            }
+        }
+        return map;
+    }
+
 }
