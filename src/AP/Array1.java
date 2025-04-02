@@ -180,4 +180,25 @@ public class Array1 {
             return result;
         }
     }
+
+    public int[] plusTwo(int[] a, int[] b) {
+//        return IntStream.concat(Arrays.stream(a), Arrays.stream(b)).toArray();
+        int[] result = new int[a.length + b.length];
+        for (int i = 0; i < result.length; i++) {
+            if (i < a.length) {
+                result[i] = a[i];
+            } else {
+                result[i] = b[i - a.length];
+            }
+        }
+        return result;
+    }
+
+    public int[] swapEnds(int[] nums) {
+        int first = nums[0];
+        int last = nums[nums.length-1];
+        nums[0]=last;
+        nums[nums.length-1] = first;
+        return nums;
+    }
 }
