@@ -196,9 +196,46 @@ public class Array1 {
 
     public int[] swapEnds(int[] nums) {
         int first = nums[0];
-        int last = nums[nums.length-1];
-        nums[0]=last;
-        nums[nums.length-1] = first;
+        int last = nums[nums.length - 1];
+        nums[0] = last;
+        nums[nums.length - 1] = first;
         return nums;
     }
+
+    public int[] midThree(int[] nums) {
+        int[] result = new int[3];
+        if (nums.length < 4) {
+            return nums;
+        } else {
+            result[0] = nums[(nums.length / 2) - 1];
+            result[1] = nums[(nums.length / 2)];
+            result[2] = nums[(nums.length / 2) + 1];
+            return result;
+        }
+    }
+
+    public int maxTriple(int[] nums) {
+        int first = nums[0];
+        int middle = nums[nums.length / 2];
+        int last = nums[nums.length - 1];
+        if (first > middle && first > last) {
+            return first;
+        }
+        if (last > middle && last > first) {
+            return last;
+        }
+        if (middle > first && middle > last) {
+            return middle;
+        }
+        return 0;
+    }
+//    public boolean unlucky1(int[] nums) {
+//        if (nums[0]==1&& nums[1]==1){
+//            return true;
+//        }
+//        if (nums[nums.length-1]==1&&nums[nums.length-2]==1){
+//            return true;
+//        }
+//        return false;
+//    }
 }
