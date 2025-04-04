@@ -229,13 +229,45 @@ public class Array1 {
         }
         return 0;
     }
-//    public boolean unlucky1(int[] nums) {
-//        if (nums[0]==1&& nums[1]==1){
-//            return true;
-//        }
-//        if (nums[nums.length-1]==1&&nums[nums.length-2]==1){
-//            return true;
-//        }
-//        return false;
-//    }
+
+    public boolean unlucky1(int[] nums) {
+        if (nums.length < 2) {
+            return false;
+        }
+        if ((nums[0] == 1 && nums[1] == 3) || (nums[1] == 1 && nums[2] == 3)) {
+            return true;
+        }
+        return nums[nums.length - 2] == 1 && nums[nums.length - 1] == 3;
+    }
+
+    public int[] make2(int[] a, int[] b) {
+        int[] result = new int[2];
+        if (a.length == 0) {
+            result[0] = b[0];
+            result[1] = b[1];
+            return result;
+        }
+        if (b.length == 0) {
+            result[0] = a[0];
+            result[1] = a[1];
+            return result;
+        }
+        if (a[0] == b[0] + 1) {
+            result[0] = a[0];
+            result[1] = b[0];
+            return result;
+        }
+        if (a.length >= 2 && (a[0] != b[0] + 1)) {
+            result[0] = a[0];
+            result[1] = a[1];
+            return result;
+        }
+        if (a.length < 2) {
+            result[0] = a[0];
+            result[1] = b[0];
+            return result;
+        }
+        return result;
+    }
+
 }
