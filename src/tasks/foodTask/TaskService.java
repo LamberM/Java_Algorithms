@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class taskService {
+public class TaskService {
     public int calculateAllKcal() {
         var result = 0;
         List<Recipe> recipeList = createExample();
