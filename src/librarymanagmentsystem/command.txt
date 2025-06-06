@@ -1,0 +1,48 @@
+# Zadanie - Library Management System
+
+## Kontekst
+Twoim zadaniem jest stworzenie systemu zarządzania biblioteką. Masz do dyspozycji następujące klasy:
+
+```java
+record Book(String title, String author, LocalDate publishDate, List<Chapter> chapters) {}
+record Chapter(String title, int pages) {}
+```
+
+## Zadania do wykonania
+
+Stwórz klasę `LibraryService` z następującymi metodami:
+
+### Podstawowe metody:
+1. `calculateTotalPages()` - oblicz łączną liczbę stron wszystkich książek
+2. `calculateAverageBookPages()` - oblicz średnią liczbę stron na książkę
+3. `findLongestBook()` - znajdź liczbę stron najdłuższej książki
+4. `getLongestBookTitle()` - zwróć tytuł najdłuższej książki
+5. `countBooksByAuthor(String authorName)` - policz książki danego autora
+
+### Zaawansowane metody:
+6. `getBooksOlderThan(int years)` - zwróć tytuły książek starszych niż podana liczba lat
+7. `calculateAverageChaptersPerBook()` - oblicz średnią liczbę rozdziałów na książkę
+8. `findBookWithMostChapters()` - znajdź tytuł książki z największą liczbą rozdziałów
+9. `findShortestBook()` - znajdź liczbę stron najkrótszej książki
+10. `getBooksPublishedInYear(int year)` - zwróć tytuły książek wydanych w danym roku
+
+## Dane testowe
+Utwórz metodę `createExampleBooks()` która zwróci listę zawierającą co najmniej 5 książek z różnymi:
+- autorami
+- datami wydania (różne lata)
+- liczbą rozdziałów (od 1 do 4 rozdziałów na książkę)
+- różną liczbą stron w rozdziałach
+
+## Wymagania techniczne:
+- Używaj tradycyjnych pętli for-each (bez Stream API)
+- Wszystkie metody publiczne
+- Metody pomocnicze (create*) powinny być prywatne
+- Używaj `var` tam gdzie to możliwe
+- Pamiętaj o zerowanie zmiennych w odpowiednich miejscach
+
+## Przykładowe książki (możesz użyć innych):
+- "Effective Java" - Joshua Bloch
+- "Spring in Action" - Craig Walls
+- "Clean Code" - Robert Martin
+- "The Hobbit" - J.R.R. Tolkien
+- "Introduction to Algorithms" - Thomas Cormen
