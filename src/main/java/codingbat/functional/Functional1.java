@@ -1,4 +1,4 @@
-package AP;
+package codingbat.functional;
 
 import java.util.List;
 

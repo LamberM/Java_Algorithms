@@ -1,4 +1,4 @@
-package AP;
+package codingbat.array;
 
 import java.util.Arrays;
 

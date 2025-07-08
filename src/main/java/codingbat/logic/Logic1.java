@@ -1,4 +1,4 @@
-package AP;
+package codingbat.logic;
 
 public class Logic1 {
     public boolean cigarParty(int cigars, boolean isWeekend) {

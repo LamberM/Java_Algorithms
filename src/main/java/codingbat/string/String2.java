@@ -1,4 +1,4 @@
-package AP;
+package codingbat.string;
 
 public class String2 {
     public String doubleChar(String str) {

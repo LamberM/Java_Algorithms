@@ -1,4 +1,4 @@
-package AP;
+package codingbat.ap;
 
 public class AP1 {
     public boolean scoresIncreasing(int[] scores) {
