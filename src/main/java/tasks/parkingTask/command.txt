@@ -1,0 +1,40 @@
+// Zadanie: System Zarządzania Parkingiem
+// Poziom: Junior/Mid Java Developer
+
+// ZADANIE:
+// Stwórz system zarządzania parkingiem wielopoziomowym z następującymi funkcjonalnościami:
+// 1. Różne typy miejsc parkingowych z różnymi cenami
+// 2. System rezerwacji i płatności
+// 3. Obsługa karnetów miesięcznych i godzinowych
+// 4. Statystyki i raporty
+
+// KLASY DO ZAIMPLEMENTOWANIA
+class ParkingSpot {
+    // TODO: Zaimplementuj klasę ParkingSpot
+    // Pola: spotId, level, spotNumber, type, isOccupied, isReserved
+    // Konstruktor z walidacją (spotId niepusty, level > 0, spotNumber > 0)
+    // Gettery, settery, equals (po spotId), hashCode, toString
+}
+
+class Vehicle {
+    // TODO: Zaimplementuj klasę Vehicle
+    // Pola: licensePlate, vehicleType, ownerName, ownerPhone
+    // Konstruktor z walidacją (licensePlate niepusty, telefon w formacie XXX-XXX-XXX)
+    // Gettery, equals (po licensePlate), hashCode
+}
+
+class ParkingSession {
+    // TODO: Zaimplementuj klasę ParkingSession
+    // Pola: sessionId, vehicle, spot, startTime, endTime, paymentMethod, totalCost, isPaid
+    // Konstruktor ustawiający startTime na teraz
+    // Metody: calculateCost(), getDurationInMinutes(), isActive(), endSession()
+    // Gettery, settery
+}
+
+class MonthlyPass {
+    // TODO: Zaimplementuj klasę MonthlyPass
+    // Pola: passId, vehicle, startDate, endDate, spotType, cost
+    // Konstruktor obliczający endDate (startDate + 30 dni) i koszt (typ miejsca * 24h * 30 dni * 0.6)
+    // Metody: isValid(), isExpired(), daysRemaining()
+    // Gettery
+}
