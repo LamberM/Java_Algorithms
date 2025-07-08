@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LibraryServiceTest {
 
-    private LibraryService libraryService = new LibraryService();
+    private final LibraryService libraryService = new LibraryService();
 
     // Helper methods to create test data
     private List<Book> createTestBooks() {
