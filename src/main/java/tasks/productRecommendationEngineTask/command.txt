@@ -1,0 +1,699 @@
+// ==================== TASK DESCRIPTION ====================
+/*
+PRODUCT RECOMMENDATION ENGINE
+
+You are tasked with building a product recommendation engine for an e-commerce platform.
+The system should recommend products to customers based on their purchase history and
+behavior patterns of similar customers.
+
+BUSINESS REQUIREMENTS:
+1. Recommend products based on collaborative filtering (customers who bought X also bought Y)
+2. Consider customer purchase frequency and recency
+3. Apply popularity-based recommendations for new customers
+4. Exclude already purchased products from recommendations
+5. Support different recommendation strategies
+6. Handle edge cases (no purchase history, discontinued products, etc.)
+
+TECHNICAL REQUIREMENTS:
+- Use only Java core libraries (Collections, Streams, etc.)
+- Implement efficient algorithms for large datasets
+- Thread-safe operations
+- Memory efficient for production use
+- Configurable recommendation parameters
+
+PERFORMANCE REQUIREMENTS:
+- Generate recommendations for 10,000+ customers in under 2 seconds
+- Support product catalogs with 100,000+ items
+- Handle purchase histories with 1M+ transactions
+*/
+
+// ==================== DATA MODELS ====================
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+
+class Product {
+    private final String productId;
+    private final String name;
+    private final String category;
+    private final double price;
+    private final boolean active;
+    private final LocalDateTime createdDate;
+
+    public Product(String productId, String name, String category, double price, boolean active, LocalDateTime createdDate) {
+        this.productId = productId;
+        this.name = name;
+        this.category = category;
+        this.price = price;
+        this.active = active;
+        this.createdDate = createdDate;
+    }
+
+    // Getters
+    public String getProductId() { return productId; }
+    public String getName() { return name; }
+    public String getCategory() { return category; }
+    public double getPrice() { return price; }
+    public boolean isActive() { return active; }
+    public LocalDateTime getCreatedDate() { return createdDate; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return Objects.equals(productId, product.productId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(productId);
+    }
+}
+
+class Purchase {
+    private final String customerId;
+    private final String productId;
+    private final LocalDateTime purchaseDate;
+    private final int quantity;
+    private final double amount;
+
+    public Purchase(String customerId, String productId, LocalDateTime purchaseDate, int quantity, double amount) {
+        this.customerId = customerId;
+        this.productId = productId;
+        this.purchaseDate = purchaseDate;
+        this.quantity = quantity;
+        this.amount = amount;
+    }
+
+    // Getters
+    public String getCustomerId() { return customerId; }
+    public String getProductId() { return productId; }
+    public LocalDateTime getPurchaseDate() { return purchaseDate; }
+    public int getQuantity() { return quantity; }
+    public double getAmount() { return amount; }
+}
+
+class Customer {
+    private final String customerId;
+    private final String segment; // "premium", "regular", "budget"
+    private final LocalDateTime registrationDate;
+    private final LocalDateTime lastActivityDate;
+
+    public Customer(String customerId, String segment, LocalDateTime registrationDate, LocalDateTime lastActivityDate) {
+        this.customerId = customerId;
+        this.segment = segment;
+        this.registrationDate = registrationDate;
+        this.lastActivityDate = lastActivityDate;
+    }
+
+    // Getters
+    public String getCustomerId() { return customerId; }
+    public String getSegment() { return segment; }
+    public LocalDateTime getRegistrationDate() { return registrationDate; }
+    public LocalDateTime getLastActivityDate() { return lastActivityDate; }
+}
+
+class RecommendationConfig {
+    private final int maxRecommendations;
+    private final double minConfidence;
+    private final int minSupportCount;
+    private final double recencyWeight;
+    private final double popularityWeight;
+
+    public RecommendationConfig(int maxRecommendations, double minConfidence, int minSupportCount,
+                               double recencyWeight, double popularityWeight) {
+        this.maxRecommendations = maxRecommendations;
+        this.minConfidence = minConfidence;
+        this.minSupportCount = minSupportCount;
+        this.recencyWeight = recencyWeight;
+        this.popularityWeight = popularityWeight;
+    }
+
+    // Getters
+    public int getMaxRecommendations() { return maxRecommendations; }
+    public double getMinConfidence() { return minConfidence; }
+    public int getMinSupportCount() { return minSupportCount; }
+    public double getRecencyWeight() { return recencyWeight; }
+    public double getPopularityWeight() { return popularityWeight; }
+}
+
+class Recommendation {
+    private final String productId;
+    private final double score;
+    private final String reason;
+    private final LocalDateTime generatedAt;
+
+    public Recommendation(String productId, double score, String reason, LocalDateTime generatedAt) {
+        this.productId = productId;
+        this.score = score;
+        this.reason = reason;
+        this.generatedAt = generatedAt;
+    }
+
+    // Getters
+    public String getProductId() { return productId; }
+    public double getScore() { return score; }
+    public String getReason() { return reason; }
+    public LocalDateTime getGeneratedAt() { return generatedAt; }
+}
+
+// ==================== MAIN IMPLEMENTATION CLASS ====================
+
+public class ProductRecommendationEngine {
+
+    private final Map<String, Product> products;
+    private final Map<String, Customer> customers;
+    private final List<Purchase> purchases;
+    private final RecommendationConfig config;
+
+    // Thread-safe caches
+    private final Map<String, List<Recommendation>> recommendationCache;
+    private final Map<String, LocalDateTime> cacheTimestamps;
+
+    public ProductRecommendationEngine(List<Product> products,
+                                     List<Customer> customers,
+                                     List<Purchase> purchases,
+                                     RecommendationConfig config) {
+        this.products = products.stream().collect(Collectors.toMap(Product::getProductId, p -> p));
+        this.customers = customers.stream().collect(Collectors.toMap(Customer::getCustomerId, c -> c));
+        this.purchases = new ArrayList<>(purchases);
+        this.config = config;
+        this.recommendationCache = new ConcurrentHashMap<>();
+        this.cacheTimestamps = new ConcurrentHashMap<>();
+    }
+
+    // ==================== METHODS TO IMPLEMENT ====================
+
+    /**
+     * Generate personalized product recommendations for a customer
+     *
+     * @param customerId The customer ID to generate recommendations for
+     * @return List of recommendations sorted by score (highest first)
+     *
+     * Algorithm should:
+     * 1. Get customer's purchase history
+     * 2. Find similar customers based on purchase overlap
+     * 3. Apply collaborative filtering
+     * 4. Add popularity-based recommendations for coverage
+     * 5. Apply business rules (exclude purchased products, inactive products)
+     * 6. Score and rank recommendations
+     */
+    public List<Recommendation> generateRecommendations(String customerId) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Find customers similar to the given customer based on purchase patterns
+     *
+     * @param customerId The target customer ID
+     * @param minSimilarity Minimum similarity score (0.0 to 1.0)
+     * @return Map of similar customer IDs to their similarity scores
+     *
+     * Use Jaccard similarity: |intersection| / |union| of purchased products
+     */
+    public Map<String, Double> findSimilarCustomers(String customerId, double minSimilarity) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Calculate collaborative filtering recommendations
+     *
+     * @param customerId The customer ID
+     * @param similarCustomers Map of similar customers and their similarity scores
+     * @return Map of product IDs to their recommendation scores
+     *
+     * Score = Sum(similarity_score * purchase_frequency) for each similar customer
+     */
+    public Map<String, Double> calculateCollaborativeRecommendations(String customerId,
+                                                                   Map<String, Double> similarCustomers) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Get popular products for popularity-based recommendations
+     *
+     * @param excludeProductIds Products to exclude from results
+     * @param limit Maximum number of products to return
+     * @return Map of product IDs to their popularity scores
+     *
+     * Popularity score = (purchase_count * recency_factor) / total_customers
+     */
+    public Map<String, Double> getPopularProducts(Set<String> excludeProductIds, int limit) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Calculate recency weight for a purchase
+     *
+     * @param purchaseDate The date of purchase
+     * @param referenceDate The reference date (usually current date)
+     * @return Recency weight (1.0 for today, decreasing over time)
+     *
+     * Formula: e^(-days_ago * decay_factor)
+     */
+    public double calculateRecencyWeight(LocalDateTime purchaseDate, LocalDateTime referenceDate) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Get customer's purchase history
+     *
+     * @param customerId The customer ID
+     * @return List of purchases for the customer, sorted by date (newest first)
+     */
+    public List<Purchase> getCustomerPurchases(String customerId) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Get products purchased by a customer
+     *
+     * @param customerId The customer ID
+     * @return Set of product IDs purchased by the customer
+     */
+    public Set<String> getCustomerPurchasedProducts(String customerId) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Check if recommendations cache is valid for a customer
+     *
+     * @param customerId The customer ID
+     * @param maxAgeMinutes Maximum age of cache in minutes
+     * @return true if cache is valid, false otherwise
+     */
+    public boolean isCacheValid(String customerId, int maxAgeMinutes) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    /**
+     * Clear expired cache entries
+     *
+     * @param maxAgeMinutes Maximum age of cache entries in minutes
+     */
+    public void clearExpiredCache(int maxAgeMinutes) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Method not implemented yet");
+    }
+
+    // ==================== HELPER METHODS (OPTIONAL TO IMPLEMENT) ====================
+
+    /**
+     * Calculate purchase frequency for a customer-product pair
+     */
+    private int calculatePurchaseFrequency(String customerId, String productId) {
+        // TODO: Implement if needed
+        return 0;
+    }
+
+    /**
+     * Filter active products only
+     */
+    private List<Product> getActiveProducts() {
+        // TODO: Implement if needed
+        return new ArrayList<>();
+    }
+
+    /**
+     * Apply business rules to filter recommendations
+     */
+    private List<Recommendation> applyBusinessRules(List<Recommendation> recommendations, String customerId) {
+        // TODO: Implement if needed
+        return recommendations;
+    }
+}
+
+// ==================== UNIT TESTS ====================
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+class ProductRecommendationEngineTest {
+
+    private ProductRecommendationEngine engine;
+    private List<Product> products;
+    private List<Customer> customers;
+    private List<Purchase> purchases;
+    private RecommendationConfig config;
+
+    // Test data setup
+    public void setUp() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime oneWeekAgo = now.minusDays(7);
+        LocalDateTime oneMonthAgo = now.minusDays(30);
+
+        // Create test products
+        products = Arrays.asList(
+            new Product("P1", "Laptop", "Electronics", 999.99, true, oneMonthAgo),
+            new Product("P2", "Mouse", "Electronics", 29.99, true, oneMonthAgo),
+            new Product("P3", "Keyboard", "Electronics", 79.99, true, oneMonthAgo),
+            new Product("P4", "Monitor", "Electronics", 299.99, true, oneMonthAgo),
+            new Product("P5", "Headphones", "Electronics", 199.99, true, oneMonthAgo),
+            new Product("P6", "Webcam", "Electronics", 89.99, false, oneMonthAgo), // Inactive
+            new Product("P7", "Speakers", "Electronics", 149.99, true, oneWeekAgo),
+            new Product("P8", "Tablet", "Electronics", 399.99, true, oneMonthAgo),
+            new Product("P9", "Phone", "Electronics", 699.99, true, oneMonthAgo),
+            new Product("P10", "Charger", "Electronics", 19.99, true, oneMonthAgo)
+        );
+
+        // Create test customers
+        customers = Arrays.asList(
+            new Customer("C1", "premium", oneMonthAgo, now),
+            new Customer("C2", "regular", oneMonthAgo, oneWeekAgo),
+            new Customer("C3", "budget", oneMonthAgo, now),
+            new Customer("C4", "premium", oneWeekAgo, now),
+            new Customer("C5", "regular", oneMonthAgo, now)
+        );
+
+        // Create test purchases
+        purchases = Arrays.asList(
+            // Customer C1 purchases
+            new Purchase("C1", "P1", oneMonthAgo, 1, 999.99),
+            new Purchase("C1", "P2", oneMonthAgo.plusDays(1), 1, 29.99),
+            new Purchase("C1", "P3", oneWeekAgo, 1, 79.99),
+
+            // Customer C2 purchases (similar to C1)
+            new Purchase("C2", "P1", oneMonthAgo.plusDays(2), 1, 999.99),
+            new Purchase("C2", "P2", oneMonthAgo.plusDays(3), 1, 29.99),
+            new Purchase("C2", "P4", oneWeekAgo.plusDays(1), 1, 299.99),
+
+            // Customer C3 purchases (different pattern)
+            new Purchase("C3", "P8", oneMonthAgo.plusDays(5), 1, 399.99),
+            new Purchase("C3", "P9", oneWeekAgo.plusDays(2), 1, 699.99),
+            new Purchase("C3", "P10", now.minusDays(1), 1, 19.99),
+
+            // Customer C4 purchases (overlaps with C1 and C2)
+            new Purchase("C4", "P1", oneWeekAgo.plusDays(3), 1, 999.99),
+            new Purchase("C4", "P5", now.minusDays(2), 1, 199.99),
+
+            // Customer C5 purchases (popular products)
+            new Purchase("C5", "P2", oneMonthAgo.plusDays(10), 2, 59.98),
+            new Purchase("C5", "P10", oneWeekAgo.plusDays(4), 1, 19.99)
+        );
+
+        config = new RecommendationConfig(5, 0.1, 2, 0.5, 0.3);
+
+        engine = new ProductRecommendationEngine(products, customers, purchases, config);
+    }
+
+    // ==================== TEST METHODS ====================
+
+    public void testGenerateRecommendationsForExistingCustomer() {
+        setUp();
+
+        // Test recommendations for customer C1
+        List<Recommendation> recommendations = engine.generateRecommendations("C1");
+
+        // Assertions
+        assert recommendations != null : "Recommendations should not be null";
+        assert recommendations.size() <= config.getMaxRecommendations() :
+            "Should not exceed max recommendations limit";
+        assert recommendations.size() > 0 : "Should have at least one recommendation";
+
+        // Check that recommendations are sorted by score (descending)
+        for (int i = 0; i < recommendations.size() - 1; i++) {
+            assert recommendations.get(i).getScore() >= recommendations.get(i + 1).getScore() :
+                "Recommendations should be sorted by score (descending)";
+        }
+
+        // Check that already purchased products are excluded
+        Set<String> purchasedProducts = engine.getCustomerPurchasedProducts("C1");
+        for (Recommendation rec : recommendations) {
+            assert !purchasedProducts.contains(rec.getProductId()) :
+                "Should not recommend already purchased products";
+        }
+
+        // Check that inactive products are excluded
+        for (Recommendation rec : recommendations) {
+            Product product = products.stream()
+                .filter(p -> p.getProductId().equals(rec.getProductId()))
+                .findFirst().orElse(null);
+            assert product != null && product.isActive() :
+                "Should only recommend active products";
+        }
+
+        System.out.println("✓ testGenerateRecommendationsForExistingCustomer passed");
+    }
+
+    public void testGenerateRecommendationsForNewCustomer() {
+        setUp();
+
+        // Test recommendations for new customer (not in purchase history)
+        List<Recommendation> recommendations = engine.generateRecommendations("C99");
+
+        // Should fall back to popularity-based recommendations
+        assert recommendations != null : "Recommendations should not be null";
+        assert recommendations.size() > 0 : "Should have popularity-based recommendations";
+
+        // All recommendations should be based on popularity
+        for (Recommendation rec : recommendations) {
+            assert rec.getReason().contains("popular") || rec.getReason().contains("trending") :
+                "New customer should get popularity-based recommendations";
+        }
+
+        System.out.println("✓ testGenerateRecommendationsForNewCustomer passed");
+    }
+
+    public void testFindSimilarCustomers() {
+        setUp();
+
+        Map<String, Double> similarCustomers = engine.findSimilarCustomers("C1", 0.1);
+
+        // Should find C2 as similar (both bought P1, P2)
+        assert similarCustomers.containsKey("C2") : "Should find C2 as similar customer";
+        assert similarCustomers.get("C2") > 0.1 : "Similarity score should be above minimum";
+
+        // Should not include the customer itself
+        assert !similarCustomers.containsKey("C1") : "Should not include self in similar customers";
+
+        // Should find C4 as similar (both bought P1)
+        assert similarCustomers.containsKey("C4") : "Should find C4 as similar customer";
+
+        System.out.println("✓ testFindSimilarCustomers passed");
+    }
+
+    public void testCalculateCollaborativeRecommendations() {
+        setUp();
+
+        Map<String, Double> similarCustomers = Map.of("C2", 0.5, "C4", 0.3);
+        Map<String, Double> recommendations = engine.calculateCollaborativeRecommendations("C1", similarCustomers);
+
+        // Should recommend products bought by similar customers but not by C1
+        assert recommendations.containsKey("P4") : "Should recommend P4 (bought by C2)";
+        assert recommendations.containsKey("P5") : "Should recommend P5 (bought by C4)";
+
+        // Should not recommend products already bought by C1
+        assert !recommendations.containsKey("P1") : "Should not recommend already purchased P1";
+        assert !recommendations.containsKey("P2") : "Should not recommend already purchased P2";
+
+        System.out.println("✓ testCalculateCollaborativeRecommendations passed");
+    }
+
+    public void testGetPopularProducts() {
+        setUp();
+
+        Set<String> excludeProducts = Set.of("P1", "P2");
+        Map<String, Double> popularProducts = engine.getPopularProducts(excludeProducts, 3);
+
+        // Should not include excluded products
+        assert !popularProducts.containsKey("P1") : "Should exclude P1";
+        assert !popularProducts.containsKey("P2") : "Should exclude P2";
+
+        // Should respect the limit
+        assert popularProducts.size() <= 3 : "Should respect the limit";
+
+        // Should include popular products like P10 (bought by multiple customers)
+        assert popularProducts.containsKey("P10") : "Should include popular product P10";
+
+        System.out.println("✓ testGetPopularProducts passed");
+    }
+
+    public void testCalculateRecencyWeight() {
+        setUp();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime oneWeekAgo = now.minusDays(7);
+        LocalDateTime oneMonthAgo = now.minusDays(30);
+
+        double recentWeight = engine.calculateRecencyWeight(now, now);
+        double weekWeight = engine.calculateRecencyWeight(oneWeekAgo, now);
+        double monthWeight = engine.calculateRecencyWeight(oneMonthAgo, now);
+
+        // Recent purchases should have higher weight
+        assert recentWeight > weekWeight : "Recent purchases should have higher weight";
+        assert weekWeight > monthWeight : "Week-old purchases should have higher weight than month-old";
+
+        // Weight should be between 0 and 1
+        assert recentWeight <= 1.0 && recentWeight >= 0.0 : "Weight should be between 0 and 1";
+        assert weekWeight <= 1.0 && weekWeight >= 0.0 : "Weight should be between 0 and 1";
+        assert monthWeight <= 1.0 && monthWeight >= 0.0 : "Weight should be between 0 and 1";
+
+        System.out.println("✓ testCalculateRecencyWeight passed");
+    }
+
+    public void testGetCustomerPurchases() {
+        setUp();
+
+        List<Purchase> customerPurchases = engine.getCustomerPurchases("C1");
+
+        // Should return all purchases for C1
+        assert customerPurchases.size() == 3 : "C1 should have 3 purchases";
+
+        // Should be sorted by date (newest first)
+        for (int i = 0; i < customerPurchases.size() - 1; i++) {
+            assert customerPurchases.get(i).getPurchaseDate()
+                .isAfter(customerPurchases.get(i + 1).getPurchaseDate()) ||
+                customerPurchases.get(i).getPurchaseDate()
+                .equals(customerPurchases.get(i + 1).getPurchaseDate()) :
+                "Purchases should be sorted by date (newest first)";
+        }
+
+        System.out.println("✓ testGetCustomerPurchases passed");
+    }
+
+    public void testGetCustomerPurchasedProducts() {
+        setUp();
+
+        Set<String> purchasedProducts = engine.getCustomerPurchasedProducts("C1");
+
+        // Should return all unique products purchased by C1
+        assert purchasedProducts.size() == 3 : "C1 should have purchased 3 unique products";
+        assert purchasedProducts.contains("P1") : "Should contain P1";
+        assert purchasedProducts.contains("P2") : "Should contain P2";
+        assert purchasedProducts.contains("P3") : "Should contain P3";
+
+        System.out.println("✓ testGetCustomerPurchasedProducts passed");
+    }
+
+    public void testCacheValidation() {
+        setUp();
+
+        // Initially cache should be invalid
+        assert !engine.isCacheValid("C1", 60) : "Cache should be invalid initially";
+
+        // Generate recommendations to populate cache
+        engine.generateRecommendations("C1");
+
+        // Now cache should be valid
+        assert engine.isCacheValid("C1", 60) : "Cache should be valid after generating recommendations";
+
+        // Cache should be invalid for very short expiry time
+        assert !engine.isCacheValid("C1", 0) : "Cache should be invalid with 0 minute expiry";
+
+        System.out.println("✓ testCacheValidation passed");
+    }
+
+    public void testPerformanceWithLargeDataset() {
+        // Create larger dataset for performance testing
+        List<Product> largeProducts = new ArrayList<>();
+        List<Customer> largeCustomers = new ArrayList<>();
+        List<Purchase> largePurchases = new ArrayList<>();
+
+        // Create 1000 products
+        for (int i = 1; i <= 1000; i++) {
+            largeProducts.add(new Product("P" + i, "Product " + i, "Category",
+                100.0 + i, true, LocalDateTime.now().minusDays(i % 30)));
+        }
+
+        // Create 100 customers
+        for (int i = 1; i <= 100; i++) {
+            largeCustomers.add(new Customer("C" + i, "regular",
+                LocalDateTime.now().minusDays(60), LocalDateTime.now()));
+        }
+
+        // Create 5000 purchases
+        Random random = new Random(42); // Fixed seed for reproducibility
+        for (int i = 1; i <= 5000; i++) {
+            largePurchases.add(new Purchase(
+                "C" + (random.nextInt(100) + 1),
+                "P" + (random.nextInt(1000) + 1),
+                LocalDateTime.now().minusDays(random.nextInt(90)),
+                1,
+                100.0 + random.nextDouble() * 900
+            ));
+        }
+
+        ProductRecommendationEngine largeEngine = new ProductRecommendationEngine(
+            largeProducts, largeCustomers, largePurchases, config);
+
+        // Measure time for generating recommendations
+        long startTime = System.currentTimeMillis();
+
+        for (int i = 1; i <= 10; i++) {
+            List<Recommendation> recommendations = largeEngine.generateRecommendations("C" + i);
+            assert recommendations != null : "Recommendations should not be null";
+        }
+
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+
+        // Should complete within reasonable time (adjust as needed)
+        assert duration < 5000 : "Should complete 10 recommendations within 5 seconds";
+
+        System.out.println("✓ testPerformanceWithLargeDataset passed (took " + duration + "ms)");
+    }
+
+    public void testEdgeCases() {
+        setUp();
+
+        // Test with non-existent customer
+        List<Recommendation> recommendations = engine.generateRecommendations("NONEXISTENT");
+        assert recommendations != null : "Should handle non-existent customer gracefully";
+
+        // Test with customer who has no purchases
+        customers.add(new Customer("C_NEW", "regular", LocalDateTime.now(), LocalDateTime.now()));
+        engine = new ProductRecommendationEngine(products, customers, purchases, config);
+
+        recommendations = engine.generateRecommendations("C_NEW");
+        assert recommendations != null : "Should handle customer with no purchases";
+        assert recommendations.size() > 0 : "Should provide popularity-based recommendations";
+
+        System.out.println("✓ testEdgeCases passed");
+    }
+
+    // Run all tests
+    public void runAllTests() {
+        System.out.println("Running Product Recommendation Engine Tests...\n");
+
+        try {
+            testGenerateRecommendationsForExistingCustomer();
+            testGenerateRecommendationsForNewCustomer();
+            testFindSimilarCustomers();
+            testCalculateCollaborativeRecommendations();
+            testGetPopularProducts();
+            testCalculateRecencyWeight();
+            testGetCustomerPurchases();
+            testGetCustomerPurchasedProducts();
+            testCacheValidation();
+            testPerformanceWithLargeDataset();
+            testEdgeCases();
+
+            System.out.println("\n🎉 All tests passed! The recommendation engine is working correctly.");
+
+        } catch (AssertionError e) {
+            System.err.println("❌ Test failed: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Main method to run tests
+    public static void main(String[] args) {
+        ProductRecommendationEngineTest test = new ProductRecommendationEngineTest();
+        test.runAllTests();
+    }
+}
